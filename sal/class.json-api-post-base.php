@@ -65,6 +65,28 @@ abstract class SAL_Post {
 		return (string) $this->post->post_type;
 	}
 
+	public function get_terms() {
+		$taxonomies = get_object_taxonomies( $this->post, 'objects' );
+		$terms = array();
+		foreach ( $taxonomies as $taxonomy ) {
+			if ( ! $taxonomy->public && ! current_user_can( $taxonomy->cap->assign_terms ) ) {
+				continue;
+			}
+
+			$terms[ $taxonomy->name ] = array();
+
+			$taxonomy_terms = wp_get_object_terms( $this->post->ID, $taxonomy->name, array( 'fields' => 'all' ) );
+			foreach ( $taxonomy_terms as $term ) {
+				$formatted_term = $this->format_taxonomy( $term, $taxonomy->name, 'display' );
+				$terms[ $taxonomy->name ][ $term->name ] = $formatted_term;
+			}
+
+			$terms[ $taxonomy->name ] = (object) $terms[ $taxonomy->name ];
+		}
+
+		return (object) $terms;
+	}
+
 	public function get_tags() {
 		$tags = array();
 		$terms = wp_get_post_tags( $this->post->ID );
@@ -510,8 +532,9 @@ abstract class SAL_Post {
 		$response['description'] = (string) $taxonomy->description;
 		$response['post_count']  = (int) $taxonomy->count;
 
-		if ( 'category' === $taxonomy_type )
+		if ( is_taxonomy_hierarchical( $taxonomy_type ) ) {
 			$response['parent'] = (int) $taxonomy->parent;
+		}
 
 		$response['meta'] = (object) array(
 			'links' => (object) array(
