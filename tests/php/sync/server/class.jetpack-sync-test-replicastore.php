@@ -48,7 +48,7 @@ class Jetpack_Sync_Test_Replicastore implements iJetpack_Sync_Replicastore {
 	function full_sync_start() {
 		$this->reset();
 	}
-	
+
 	function full_sync_end( $checksum ) {
 		// noop right now
 	}
@@ -56,7 +56,7 @@ class Jetpack_Sync_Test_Replicastore implements iJetpack_Sync_Replicastore {
 	function get_wp_version() {
 		return $this->wp_version;
 	}
-	
+
 	function set_wp_version( $version ) {
 		$this->wp_version = $version;
 	}
@@ -85,7 +85,7 @@ class Jetpack_Sync_Test_Replicastore implements iJetpack_Sync_Replicastore {
 
 	function filter_post_status( $post ) {
 		$matched_status = ! in_array( $post->post_status, array( 'inherit' ) )
-						  && ( $this->post_status ? $post->post_status === $this->post_status : true );
+		                  && ( $this->post_status ? $post->post_status === $this->post_status : true );
 
 		return $matched_status;
 	}
@@ -141,9 +141,9 @@ class Jetpack_Sync_Test_Replicastore implements iJetpack_Sync_Replicastore {
 
 	function get_comment( $id ) {
 		if ( isset( $this->comments[ $id ] ) ) {
-			return $this->comments[ $id ];	
+			return $this->comments[ $id ];
 		}
-		return false;		
+		return false;
 	}
 
 	function upsert_comment( $comment ) {
@@ -174,6 +174,13 @@ class Jetpack_Sync_Test_Replicastore implements iJetpack_Sync_Replicastore {
 		$this->options[ $option ] = false;
 	}
 
+	function options_checksum() {
+		return strtoupper( dechex( array_reduce( Jetpack_Sync_Defaults::$default_options_whitelist, array( $this, 'option_checksum' ), 0 ) ) );
+	}
+
+	private function option_checksum( $carry, $option_name ) {
+		return $carry ^ sprintf( '%u', crc32( $option_name . $this->options[ $option_name ] ) )+0;
+	}
 
 	// theme functions
 	function set_theme_support( $theme_support ) {
@@ -227,7 +234,7 @@ class Jetpack_Sync_Test_Replicastore implements iJetpack_Sync_Replicastore {
 	}
 
 	public function upsert_metadata( $type, $object_id, $meta_key, $meta_value, $meta_id ) {
-		$this->meta[ $meta_id ] = (object) array( 
+		$this->meta[ $meta_id ] = (object) array(
 			'meta_id'   => $meta_id,
 			'type'      => $type,
 			'object_id' => absint( $object_id ),
@@ -300,8 +307,8 @@ class Jetpack_Sync_Test_Replicastore implements iJetpack_Sync_Replicastore {
 	function get_term( $taxonomy, $term_id, $term_key = 'term_id' ) {
 		if ( ! $taxonomy && $term_key === 'term_taxonomy_id' ) {
 			foreach(  $this->terms as $tax => $terms_array ) {
-				 $term = $this->get_term( $tax, $term_id, 'term_taxonomy_id' );
-				 if( $term ) {
+				$term = $this->get_term( $tax, $term_id, 'term_taxonomy_id' );
+				if( $term ) {
 					return $term;
 				}
 			}
@@ -343,9 +350,9 @@ class Jetpack_Sync_Test_Replicastore implements iJetpack_Sync_Replicastore {
 
 	function update_term( $term_object ) {
 		$taxonomy = $term_object->taxonomy;
-		
+
 		if ( ! isset( $this->terms[ $taxonomy ] ) ) {
-			// empty 
+			// empty
 			$this->terms[ $taxonomy ] = array();
 			$this->terms[ $taxonomy ][] = $term_object;
 		}
@@ -392,7 +399,7 @@ class Jetpack_Sync_Test_Replicastore implements iJetpack_Sync_Replicastore {
 			$this->terms[ $taxonomy ] = array();
 		}
 		$terms = array();
-		
+
 		// Note: array_map might be better for this but didn't want to write a callback
 		foreach ( $this->terms[ $taxonomy ] as $saved_term_object ) {
 			if ( $saved_term_object->term_id !== $term_id ) {
@@ -425,7 +432,7 @@ class Jetpack_Sync_Test_Replicastore implements iJetpack_Sync_Replicastore {
 	function update_object_terms( $object_id, $taxonomy, $term_ids, $append ) {
 		if ( $append ) {
 			$previous_array = isset( $this->object_terms[ $taxonomy ] )
-			                 && isset( $this->object_terms[ $taxonomy ][ $object_id ] )
+			                  && isset( $this->object_terms[ $taxonomy ][ $object_id ] )
 				? $this->object_terms[ $taxonomy ][ $object_id ] : array();
 			$this->object_terms[ $taxonomy ][ $object_id ] = array_merge ( $previous_array , $term_ids );
 		} else {
@@ -438,13 +445,13 @@ class Jetpack_Sync_Test_Replicastore implements iJetpack_Sync_Replicastore {
 	}
 
 	function user_count() {
-		return count( $this->users );	
+		return count( $this->users );
 	}
 
 	function get_user( $user_id ) {
 		return isset( $this->users[ $user_id ] ) ? $this->users[ $user_id ] : null;
 	}
-	
+
 	function upsert_user( $user ) {
 		$this->users[ $user->ID ] = $user;
 	}
@@ -456,7 +463,8 @@ class Jetpack_Sync_Test_Replicastore implements iJetpack_Sync_Replicastore {
 	function checksum_all() {
 		return array(
 			'posts' => $this->posts_checksum(),
-			'comments' => $this->comments_checksum()
+			'comments' => $this->comments_checksum(),
+			'options' => $this->options_checksum(),
 		);
 	}
 
